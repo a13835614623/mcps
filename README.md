@@ -14,7 +14,7 @@
 ## 安装
 
 ```bash
-npm install -g mcps
+npm install -g @maplezzk/mcps
 ```
 
 ## 使用指南

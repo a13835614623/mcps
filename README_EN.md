@@ -14,7 +14,7 @@ A powerful command-line interface for managing and interacting with [Model Conte
 ## Installation
 
 ```bash
-npm install -g mcps
+npm install -g @maplezzk/mcps
 ```
 
 ## Usage
