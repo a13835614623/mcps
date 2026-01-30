@@ -1,0 +1,42 @@
+{
+  "name": "mcpp",
+  "version": "1.0.2",
+  "description": "A CLI to manage and use MCP servers",
+  "main": "dist/index.js",
+  "keywords": [
+    "mcp",
+    "cli",
+    "ai",
+    "tool"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bin": {
+    "mcpp": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "conf": "^15.0.2",
+    "eventsource": "^4.1.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/eventsource": "^1.1.15",
+    "@types/node": "^22.10.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}
