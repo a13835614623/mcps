@@ -54,8 +54,17 @@ mcpp tools fetch
 ```
 
 **调用工具：**
-参数以 `key=value` 形式传递。CLI 会尝试自动将值解析为 JSON（数字、布尔值、对象）。
 
+语法：
+```bash
+mcpp call <server_name> <tool_name> [arguments...]
+```
+
+- `<server_name>`: 已配置的 MCP 服务名称
+- `<tool_name>`: 要调用的工具名称
+- `[arguments...]`: 以 `key=value` 形式传递的参数。CLI 会尝试自动将值解析为 JSON（数字、布尔值、对象）。
+
+示例：
 ```bash
 # 简单的字符串参数
 mcpp call fetch fetch url="https://example.com"

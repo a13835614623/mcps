@@ -53,8 +53,17 @@ mcpp tools fetch
 ```
 
 **Call a tool:**
-Arguments are passed as `key=value` pairs. The CLI attempts to parse values as JSON (numbers, booleans, objects) automatically.
 
+Syntax:
+```bash
+mcpp call <server_name> <tool_name> [arguments...]
+```
+
+- `<server_name>`: The name of the configured MCP server
+- `<tool_name>`: The name of the tool to call
+- `[arguments...]`: Arguments passed as `key=value` pairs. The CLI attempts to parse values as JSON (numbers, booleans, objects) automatically.
+
+Examples:
 ```bash
 # Simple string argument
 mcpp call fetch fetch url="https://example.com"
