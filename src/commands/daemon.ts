@@ -3,11 +3,10 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import { connectionPool } from '../core/pool.js';
 import { createRequire } from 'module';
+import { DAEMON_PORT } from '../core/constants.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../../package.json');
-
-const PORT = 4100;
 
 export const registerDaemonCommand = (program: Command) => {
   const daemonCmd = program.command('daemon')
@@ -15,13 +14,9 @@ export const registerDaemonCommand = (program: Command) => {
 
   daemonCmd.command('start', { isDefault: true })
     .description('Start the daemon (default)')
-    .option('-p, --port <number>', 'Port to listen on', String(PORT))
+    .option('-p, --port <number>', 'Port to listen on', String(DAEMON_PORT))
     .action(async (options) => {
       const port = parseInt(options.port);
-      // ... (server logic) ...
-      // Need to move the server creation logic here or keep it in the main action if no subcommands match?
-      // Commander handling of default commands with subcommands can be tricky.
-      // Let's refactor to use separate actions.
       startDaemon(port);
     });
 
@@ -29,7 +24,7 @@ export const registerDaemonCommand = (program: Command) => {
     .description('Stop the running daemon')
     .action(async () => {
        try {
-         await fetch(`http://localhost:${PORT}/stop`, { method: 'POST' });
+         await fetch(`http://localhost:${DAEMON_PORT}/stop`, { method: 'POST' });
          console.log(chalk.green('Daemon stopped successfully.'));
        } catch (e) {
          console.error(chalk.red('Failed to stop daemon. Is it running?'));
@@ -40,19 +35,19 @@ export const registerDaemonCommand = (program: Command) => {
     .description('Check daemon status')
     .action(async () => {
        try {
-         const res = await fetch(`http://localhost:${PORT}/status`);
+         const res = await fetch(`http://localhost:${DAEMON_PORT}/status`);
          const data = await res.json();
          console.log(chalk.green(`Daemon is running (v${data.version})`));
-          if (data.connections && data.connections.length > 0) {
-             console.log(chalk.bold('\nActive Connections:'));
-             data.connections.forEach((conn: any) => {
-                 const count = conn.toolsCount !== null ? `(${conn.toolsCount} tools)` : '(error listing tools)';
-                 const status = conn.status === 'error' ? chalk.red('[Error]') : '';
-                 console.log(chalk.cyan(`- ${conn.name} ${chalk.gray(count)} ${status}`));
-             });
-          } else {
-              console.log(chalk.gray('No active connections.'));
-          }
+         if (data.connections && data.connections.length > 0) {
+            console.log(chalk.bold('\nActive Connections:'));
+            data.connections.forEach((conn: any) => {
+                const count = conn.toolsCount !== null ? `(${conn.toolsCount} tools)` : '(error listing tools)';
+                const status = conn.status === 'error' ? chalk.red('[Error]') : '';
+                console.log(chalk.cyan(`- ${conn.name} ${chalk.gray(count)} ${status}`));
+            });
+         } else {
+             console.log(chalk.gray('No active connections.'));
+         }
        } catch (e) {
          console.error(chalk.red('Daemon is not running.'));
        }
@@ -62,7 +57,7 @@ export const registerDaemonCommand = (program: Command) => {
     .description('Restart the daemon or a specific server connection')
     .action(async (serverName) => {
        try {
-         const res = await fetch(`http://localhost:${PORT}/restart`, { 
+         const res = await fetch(`http://localhost:${DAEMON_PORT}/restart`, { 
             method: 'POST',
             body: JSON.stringify({ server: serverName })
          });
