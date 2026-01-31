@@ -65,9 +65,6 @@ export class ConnectionPool {
     // 过滤掉 disabled 的服务器
     const enabledServers = servers.filter(server => {
       const disabled = (server as any).disabled === true;
-      if (disabled) {
-        console.log(`[Daemon] Skipping disabled server: ${server.name}`);
-      }
       return !disabled;
     });
 
@@ -78,19 +75,28 @@ export class ConnectionPool {
       return;
     }
 
-    console.log(`[Daemon] Initializing ${enabledServers.length} connection(s)...`);
+    console.log(`[Daemon] Connecting to ${enabledServers.length} server(s)...`);
+    const results: { name: string; success: boolean; error?: string }[] = [];
     for (const server of enabledServers) {
         try {
-            console.log(`[Daemon] Connecting to server: ${server.name}...`);
             await this.getClient(server.name, { timeoutMs: 8000 });
-            console.log(`[Daemon] ✓ Connected to ${server.name}`);
+            results.push({ name: server.name, success: true });
         } catch (error: any) {
-            console.error(`[Daemon] ✗ Failed to connect to ${server.name}:`, error.message);
+            results.push({ name: server.name, success: false, error: error.message });
         }
+    }
+
+    // Print summary
+    const successCount = results.filter(r => r.success).length;
+    const failed = results.filter(r => !r.success);
+    console.log(`[Daemon] Connected: ${successCount}/${enabledServers.length}`);
+    if (failed.length > 0) {
+        failed.forEach(f => {
+            console.error(`[Daemon] ✗ ${f.name}: ${f.error}`);
+        });
     }
     this.initializing = false;
     this.initialized = true;
-    console.log('[Daemon] Initialization complete.');
   }
 
   getInitStatus() {

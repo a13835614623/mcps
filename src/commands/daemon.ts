@@ -75,16 +75,19 @@ const startAction = async (options: any) => {
   // Stream logs to current console while waiting for ready
   if (subprocess.stdout) {
       subprocess.stdout.on('data', (data) => {
-          process.stdout.write(`[Daemon] ${data}`);
+          process.stdout.write(`${data}`);
       });
   }
   if (subprocess.stderr) {
       subprocess.stderr.on('data', (data) => {
           const msg = data.toString();
-          process.stderr.write(chalk.red(`[Daemon] ${msg}`));
           // Detect port conflict in child process
           if (msg.includes('Port') && msg.includes('is already in use')) {
               childFailed = true;
+          }
+          // Only show error output if it contains critical errors
+          if (msg.includes('Error') || msg.includes('EADDRINUSE')) {
+              process.stderr.write(chalk.red(`[Daemon] ${msg}`));
           }
       });
   }
@@ -95,7 +98,7 @@ const startAction = async (options: any) => {
   // We can poll status for a second
   const start = Date.now();
   // Increased timeout to allow for connection initialization
-  while (Date.now() - start < 10000) {
+  while (Date.now() - start < 30000) {
       // If child reported port conflict, check if daemon is actually running
       if (childFailed) {
           const stillRunning = await isPortInUse(port);
