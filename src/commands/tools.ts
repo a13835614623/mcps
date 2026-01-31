@@ -30,7 +30,8 @@ function printTools(serverName: string, tools: any) {
 export const registerToolsCommand = (program: Command) => {
   program.command('tools <server>')
     .description('List available tools on a server')
-    .action(async (serverName) => {
+    .option('-s, --simple', 'Show only tool names')
+    .action(async (serverName, options) => {
       // Check if server exists in config first
       const serverConfig = configManager.getServer(serverName);
       if (!serverConfig) {
@@ -44,8 +45,20 @@ export const registerToolsCommand = (program: Command) => {
 
         // List via daemon
         const tools = await DaemonClient.listTools(serverName);
-        printTools(serverName, tools);
-        
+
+        if (options.simple) {
+          // Simple mode: only show tool names
+          if (!tools || tools.length === 0) {
+            console.log(chalk.yellow('No tools found.'));
+          } else {
+            tools.forEach((tool: any) => console.log(tool.name));
+          }
+          console.log(chalk.gray(`\nTotal: ${tools.length} tool(s)`));
+        } else {
+          // Detailed mode: show full tool information
+          printTools(serverName, tools);
+        }
+
       } catch (error: any) {
         console.error(chalk.red(`Failed to list tools: ${error.message}`));
         process.exit(1);
