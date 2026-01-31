@@ -326,9 +326,9 @@ const startDaemon = (port: number) => {
         if (req.method === 'POST' && req.url === '/stop') {
              res.writeHead(200, { 'Content-Type': 'application/json' });
              res.end(JSON.stringify({ message: 'Daemon shutting down...' }));
-             setTimeout(() => {
+             setTimeout(async () => {
                server.close();
-               connectionPool.closeAll();
+               await connectionPool.closeAll();
                process.exit(0);
              }, 100);
              return;
