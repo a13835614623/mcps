@@ -31,8 +31,8 @@ function isPortInUse(port: number): Promise<boolean> {
 }
 
 // Action functions for daemon commands
-const startAction = async (options: any, parentCmd: Command) => {
-  const port = parseInt(options.port || DAEMON_PORT);
+const startAction = async (options: any) => {
+  const port = parseInt(options.port || process.env.MCPS_PORT || DAEMON_PORT);
 
   // Check if port is in use (more reliable than HTTP check)
   const portInUse = await isPortInUse(port);
@@ -123,9 +123,9 @@ const startAction = async (options: any, parentCmd: Command) => {
   process.exit(0);
 };
 
-const stopAction = async (parentCmd: Command) => {
+const stopAction = async (options?: any) => {
    try {
-     const port = parseInt(parentCmd.opts().port || DAEMON_PORT);
+     const port = parseInt(options?.port || process.env.MCPS_PORT || DAEMON_PORT);
      await fetch(`http://localhost:${port}/stop`, { method: 'POST' });
      console.log(chalk.green('Daemon stopped successfully.'));
    } catch (e) {
@@ -133,9 +133,9 @@ const stopAction = async (parentCmd: Command) => {
    }
 };
 
-const statusAction = async (parentCmd: Command) => {
+const statusAction = async (options?: any) => {
    try {
-     const port = parseInt(parentCmd.opts().port || DAEMON_PORT);
+     const port = parseInt(options?.port || process.env.MCPS_PORT || DAEMON_PORT);
      const res = await fetch(`http://localhost:${port}/status`);
      const data = await res.json();
      console.log(chalk.green(`Daemon is running (v${data.version})`));
@@ -154,9 +154,9 @@ const statusAction = async (parentCmd: Command) => {
    }
 };
 
-const restartAction = async (serverName: string | undefined, parentCmd: Command) => {
+const restartAction = async (serverName: string | undefined, options?: any) => {
    try {
-     const port = parseInt(parentCmd.opts().port || DAEMON_PORT);
+     const port = parseInt(options?.port || process.env.MCPS_PORT || DAEMON_PORT);
      const res = await fetch(`http://localhost:${port}/restart`, {
         method: 'POST',
         body: JSON.stringify({ server: serverName })
@@ -174,22 +174,22 @@ export const registerDaemonCommand = (program: Command) => {
   program.command('start')
     .description('Start the daemon')
     .option('-p, --port <number>', 'Daemon port', String(DAEMON_PORT))
-    .action((options) => startAction(options, program));
+    .action((options) => startAction(options));
 
   program.command('stop')
     .description('Stop the daemon')
     .option('-p, --port <number>', 'Daemon port', String(DAEMON_PORT))
-    .action(() => stopAction(program));
+    .action((options) => stopAction(options));
 
   program.command('status')
     .description('Check daemon status')
     .option('-p, --port <number>', 'Daemon port', String(DAEMON_PORT))
-    .action(() => statusAction(program));
+    .action((options) => statusAction(options));
 
   program.command('restart [server]')
     .description('Restart the daemon or a specific server connection')
     .option('-p, --port <number>', 'Daemon port', String(DAEMON_PORT))
-    .action((serverName) => restartAction(serverName, program));
+    .action((serverName, options) => restartAction(serverName, options));
 
   // ===== Legacy daemon subcommands (for backward compatibility) =====
 
@@ -200,19 +200,19 @@ export const registerDaemonCommand = (program: Command) => {
 
   daemonCmd.command('start', { isDefault: true, hidden: true })
     .description('Start the daemon (default)')
-    .action((options) => startAction(options, daemonCmd));
+    .action((options) => startAction(options));
 
   daemonCmd.command('stop')
     .description('Stop the running daemon')
-    .action(() => stopAction(daemonCmd));
+    .action((options) => stopAction(options));
 
   daemonCmd.command('status')
     .description('Check daemon status')
-    .action(() => statusAction(daemonCmd));
+    .action((options) => statusAction(options));
 
   daemonCmd.command('restart [server]')
     .description('Restart the daemon or a specific server connection')
-    .action((serverName) => restartAction(serverName, daemonCmd));
+    .action((serverName, options) => restartAction(serverName, options));
 };
 
 const startDaemon = (port: number) => {
