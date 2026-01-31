@@ -65,7 +65,7 @@ export const registerDaemonCommand = (program: Command) => {
         // We can poll status for a second
         const start = Date.now();
         // Increased timeout to allow for connection initialization
-        while (Date.now() - start < 10000) { 
+        while (Date.now() - start < 10000) {
             try {
                 const res = await fetch(`http://localhost:${port}/status`);
                 if (res.ok) {
@@ -79,6 +79,7 @@ export const registerDaemonCommand = (program: Command) => {
             await new Promise(r => setTimeout(r, 200));
         }
         console.log(chalk.yellow('Daemon started (async check timeout, but likely running).'));
+        process.exit(0);
       }
     });
 
