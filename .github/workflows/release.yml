@@ -2,7 +2,7 @@ name: Release to npm
 
 on:
   push:
-    branches: [main]
+    branches: [main, test/release-npm]
 
 jobs:
   release:
