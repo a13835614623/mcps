@@ -242,7 +242,7 @@ mcps call my-server config debug=true timeout=5000 options='{"retries": 3}'
 默认情况下，配置文件存储在：
 `~/.mcps/mcp.json`
 
-您可以通过设置 `MCP_CONFIG_DIR` 环境变量来更改存储位置。
+您可以通过设置 `MCPS_CONFIG_DIR` 环境变量来更改存储位置。
 
 配置文件示例：
 ```json
@@ -270,7 +270,7 @@ mcps call my-server config debug=true timeout=5000 options='{"retries": 3}'
 
 ## 环境变量
 
-- `MCP_CONFIG_DIR`: 配置文件目录（默认：`~/.mcps`）
+- `MCPS_CONFIG_DIR`: 配置文件目录（默认：`~/.mcps`）
 - `MCPS_PORT`: Daemon 端口（默认：`4100`）
 - `MCPS_VERBOSE`: 详细日志模式（默认：`false`）
 

@@ -242,7 +242,7 @@ mcps call my-server config debug=true timeout=5000 options='{"retries": 3}'
 By default, the configuration file is stored at:
 `~/.mcps/mcp.json`
 
-You can change the storage location by setting the `MCP_CONFIG_DIR` environment variable.
+You can change the storage location by setting the `MCPS_CONFIG_DIR` environment variable.
 
 Configuration file example:
 ```json
@@ -270,7 +270,7 @@ Configuration file example:
 
 ## Environment Variables
 
-- `MCP_CONFIG_DIR`: Configuration file directory (default: `~/.mcps`)
+- `MCPS_CONFIG_DIR`: Configuration file directory (default: `~/.mcps`)
 - `MCPS_PORT`: Daemon port (default: `4100`)
 - `MCPS_VERBOSE`: Verbose logging mode (default: `false`)
 
