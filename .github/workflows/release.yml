@@ -10,6 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     # 只有当 PR 被合并时才运行
     if: github.event.pull_request.merged == true && !contains(github.event.pull_request.title, '[skip release]')
+    
+    # OIDC 权限配置（Trusted Publisher 必需）
+    permissions:
+      id-token: write  # Required for OIDC
+      contents: read
 
     steps:
       - name: Checkout code
@@ -19,8 +24,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
+          # 注意：使用 Trusted Publisher 时不需要 registry-url 和 NODE_AUTH_TOKEN
 
       - name: Install dependencies
         run: npm ci
@@ -52,9 +57,9 @@ jobs:
 
       - name: Publish to npm
         if: steps.version.outputs.should_publish == 'true'
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # Trusted Publisher: npm CLI 自动检测 OIDC 环境，无需 NODE_AUTH_TOKEN
+        run: npm publish --provenance
+        # 注意：不需要 env.NODE_AUTH_TOKEN
 
       - name: Create GitHub Release
         if: steps.version.outputs.should_publish == 'true'
