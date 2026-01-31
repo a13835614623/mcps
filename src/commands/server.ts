@@ -94,13 +94,15 @@ export const registerServerCommands = (program: Command) => {
   serverCmd.command('update <name>')
     .description('Update a server')
     .option('--command <command>', 'New command')
+    .option('--args [args...]', 'New arguments for the command')
     .option('--url <url>', 'New URL')
     .action((name, options) => {
         try {
             const updates: any = {};
             if (options.command) updates.command = options.command;
+            if (options.args) updates.args = options.args;
             if (options.url) updates.url = options.url;
-            
+
             if (Object.keys(updates).length === 0) {
                 console.log(chalk.yellow('No updates provided.'));
                 return;

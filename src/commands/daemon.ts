@@ -69,8 +69,11 @@ export const registerDaemonCommand = (program: Command) => {
             try {
                 const res = await fetch(`http://localhost:${port}/status`);
                 if (res.ok) {
-                    console.log(chalk.green(`Daemon started successfully on port ${port}.`));
-                    process.exit(0);
+                    const data = await res.json();
+                    if (data.initialized) {
+                        console.log(chalk.green(`Daemon started successfully on port ${port}.`));
+                        process.exit(0);
+                    }
                 }
             } catch {}
             await new Promise(r => setTimeout(r, 200));
@@ -100,7 +103,7 @@ export const registerDaemonCommand = (program: Command) => {
          if (data.connections && data.connections.length > 0) {
             console.log(chalk.bold('\nActive Connections:'));
             data.connections.forEach((conn: any) => {
-                const count = conn.toolsCount !== null ? `(${conn.toolsCount} tools)` : '(error listing tools)';
+                const count = conn.toolsCount !== null ? `(${conn.toolsCount} tools)` : (data.initializing ? '(initializing)' : '(error listing tools)');
                 const status = conn.status === 'error' ? chalk.red('[Error]') : '';
                 console.log(chalk.cyan(`- ${conn.name} ${chalk.gray(count)} ${status}`));
             });
@@ -146,12 +149,14 @@ const startDaemon = (port: number) => {
         }
 
         if (req.method === 'GET' && req.url === '/status') {
-          const connections = await connectionPool.getActiveConnectionDetails();
+          const initStatus = connectionPool.getInitStatus();
+          const connections = await connectionPool.getActiveConnectionDetails(!initStatus.initializing);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ 
               status: 'running', 
               version: pkg.version,
-              connections
+              connections,
+              ...initStatus
           }));
           return;
         }
@@ -233,10 +238,10 @@ const startDaemon = (port: number) => {
               }
 
               const client = await connectionPool.getClient(serverName);
-              const tools = await client.listTools();
+              const toolsResult = await client.listTools();
 
               res.writeHead(200, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ tools }));
+              res.end(JSON.stringify(toolsResult));
             } catch (error: any) {
               console.error(`[Daemon] Error listing tools:`, error);
               res.writeHead(500, { 'Content-Type': 'application/json' });

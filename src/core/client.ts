@@ -9,6 +9,24 @@ import { EventSource } from 'eventsource';
 // @ts-ignore
 global.EventSource = EventSource;
 
+const resolveEnvPlaceholders = (input: string) => {
+  const missing = new Set<string>();
+  const resolved = input.replace(/\$\{([A-Za-z0-9_]+)\}|\$([A-Za-z0-9_]+)/g, (match, braced, bare) => {
+    const key = braced || bare;
+    const val = process.env[key];
+    if (val === undefined) {
+      missing.add(key);
+      return match;
+    }
+    return val;
+  });
+  if (missing.size > 0) {
+    const list = Array.from(missing).join(', ');
+    throw new Error(`Missing environment variables: ${list}`);
+  }
+  return resolved;
+};
+
 export class McpClientService {
   private client: Client | null = null;
   private transport: StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport | null = null;
@@ -16,7 +34,17 @@ export class McpClientService {
   async connect(config: ServerConfig) {
     try {
       if (config.type === 'stdio') {
-        const rawEnv = config.env ? { ...process.env, ...config.env } : process.env;
+        const resolvedConfigEnv: Record<string, string> = {};
+        if (config.env) {
+          for (const key in config.env) {
+            const val = config.env[key];
+            if (typeof val === 'string') {
+              resolvedConfigEnv[key] = resolveEnvPlaceholders(val);
+            }
+          }
+        }
+
+        const rawEnv = config.env ? { ...process.env, ...resolvedConfigEnv } : process.env;
         const env: Record<string, string> = {};
         for (const key in rawEnv) {
             const val = rawEnv[key];
@@ -25,15 +53,18 @@ export class McpClientService {
             }
         }
 
+        const args = config.args ? config.args.map(arg => resolveEnvPlaceholders(arg)) : [];
         this.transport = new StdioClientTransport({
           command: config.command,
-          args: config.args,
+          args,
           env: env,
         });
       } else if (config.type === 'http') {
-        this.transport = new StreamableHTTPClientTransport(new URL(config.url));
+        const url = resolveEnvPlaceholders(config.url);
+        this.transport = new StreamableHTTPClientTransport(new URL(url));
       } else {
-        this.transport = new SSEClientTransport(new URL(config.url));
+        const url = resolveEnvPlaceholders(config.url);
+        this.transport = new SSEClientTransport(new URL(url));
       }
 
       this.client = new Client(

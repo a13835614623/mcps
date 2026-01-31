@@ -4,8 +4,10 @@ import { ServerConfig } from '../types/config.js';
 
 export class ConnectionPool {
   private clients: Map<string, McpClientService> = new Map();
+  private initializing = false;
+  private initialized = false;
 
-  async getClient(serverName: string): Promise<McpClientService> {
+  async getClient(serverName: string, options?: { timeoutMs?: number }): Promise<McpClientService> {
     if (this.clients.has(serverName)) {
       return this.clients.get(serverName)!;
     }
@@ -15,9 +17,16 @@ export class ConnectionPool {
       throw new Error(`Server "${serverName}" not found in config.`);
     }
 
-    console.log(`[Daemon] Connecting to server: ${serverName}...`);
     const client = new McpClientService();
-    await client.connect(serverConfig);
+    const connectPromise = client.connect(serverConfig);
+    if (options?.timeoutMs) {
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(`Connection timeout after ${options.timeoutMs}ms`)), options.timeoutMs);
+      });
+      await Promise.race([connectPromise, timeoutPromise]);
+    } else {
+      await connectPromise;
+    }
     this.clients.set(serverName, client);
     return client;
   }
@@ -50,30 +59,56 @@ export class ConnectionPool {
 
   async initializeAll() {
     const servers = configManager.listServers();
-    if (servers.length === 0) return;
+    this.initializing = true;
+    this.initialized = false;
 
-    console.log('[Daemon] Initializing connections...');
-    for (const server of servers) {
+    // 过滤掉 disabled 的服务器
+    const enabledServers = servers.filter(server => {
+      const disabled = (server as any).disabled === true;
+      if (disabled) {
+        console.log(`[Daemon] Skipping disabled server: ${server.name}`);
+      }
+      return !disabled;
+    });
+
+    if (enabledServers.length === 0) {
+      console.log('[Daemon] No enabled servers to initialize.');
+      this.initializing = false;
+      this.initialized = true;
+      return;
+    }
+
+    console.log(`[Daemon] Initializing ${enabledServers.length} connection(s)...`);
+    for (const server of enabledServers) {
         try {
-            await this.getClient(server.name);
-            console.log(`[Daemon] Connected to ${server.name}`);
+            console.log(`[Daemon] Connecting to server: ${server.name}...`);
+            await this.getClient(server.name, { timeoutMs: 8000 });
+            console.log(`[Daemon] ✓ Connected to ${server.name}`);
         } catch (error: any) {
-            console.error(`[Daemon] Failed to connect to ${server.name}:`, error.message);
+            console.error(`[Daemon] ✗ Failed to connect to ${server.name}:`, error.message);
         }
     }
+    this.initializing = false;
+    this.initialized = true;
     console.log('[Daemon] Initialization complete.');
   }
 
-  async getActiveConnectionDetails(): Promise<{ name: string, toolsCount: number | null, status: string }[]> {
+  getInitStatus() {
+    return { initializing: this.initializing, initialized: this.initialized };
+  }
+
+  async getActiveConnectionDetails(includeTools = true): Promise<{ name: string, toolsCount: number | null, status: string }[]> {
     const details = [];
     for (const [name, client] of this.clients) {
       let toolsCount = null;
       let status = 'connected';
-      try {
-        const result = await client.listTools();
-        toolsCount = result.tools.length;
-      } catch (e) {
-        status = 'error';
+      if (includeTools) {
+        try {
+          const result = await client.listTools();
+          toolsCount = result.tools.length;
+        } catch (e) {
+          status = 'error';
+        }
       }
       details.push({ name, toolsCount, status });
     }
